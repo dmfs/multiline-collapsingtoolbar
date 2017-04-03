@@ -25,6 +25,7 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.support.annotation.ColorInt;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.IntDef;
@@ -686,10 +687,10 @@ public class CollapsingToolbarLayout extends FrameLayout {
                 public void onAnimationUpdate(ValueAnimator animator) {
                     // BEGIN MODIFICATION by dmfs: apply scrim & blending automatically if configured that way
                     if ((mAutoAnimate & AUTO_ANIMATE_SCRIM) != 0) {
-                        setScrimAlpha(animator.getAnimatedIntValue());
+                        setScrimAlpha((Integer) animator.getAnimatedValue());
                     }
                     if ((mAutoAnimate & AUTO_ANIMATE_TITLE) != 0) {
-                        mCollapsingTextHelper.setBlendRatio(animator.getAnimatedIntValue() / 255f);
+                        mCollapsingTextHelper.setBlendRatio(((Integer)animator.getAnimatedValue()) / 255f);
                     }
                     // END MODIFICATION by dmfs
                 }
@@ -704,6 +705,32 @@ public class CollapsingToolbarLayout extends FrameLayout {
 
     void setScrimAlpha(int alpha) {
         if (alpha != mScrimAlpha) {
+
+            // BEGIN MODIFICATION by dmfs: update all children with scrim mode
+            float floatAlpha = alpha / (float) 0xff;
+            for (int i = 0, z = getChildCount(); i < z; i++) {
+                final View child = getChildAt(i);
+                final LayoutParams lp = (LayoutParams) child.getLayoutParams();
+
+                switch (lp.mScrimMode) {
+                    case LayoutParams.SCRIM_MODE_OUT:
+                        if (Build.VERSION.SDK_INT < 11) {
+                            child.setVisibility(floatAlpha < 0.5 ? VISIBLE : GONE);
+                        } else {
+                            child.setAlpha(1 - floatAlpha);
+                        }
+                        break;
+                    case LayoutParams.SCRIM_MODE_IN:
+                        if (Build.VERSION.SDK_INT < 11) {
+                            child.setVisibility(floatAlpha < 0.5 ? GONE : VISIBLE);
+                        } else {
+                            child.setAlpha(floatAlpha);
+                        }
+                        break;
+                }
+            }
+            // END MODIFICATION by dmfs
+
             final Drawable contentScrim = mContentScrim;
             if (contentScrim != null && mToolbar != null) {
                 ViewCompat.postInvalidateOnAnimation(mToolbar);
@@ -1239,8 +1266,28 @@ public class CollapsingToolbarLayout extends FrameLayout {
          */
         public static final int COLLAPSE_MODE_PARALLAX = 2;
 
+        // BEGIN MODIFICATION by dmfs: define scrim modes for child elements
+        /**
+         * The view will have default behavior on scrim.
+         */
+        public static final int SCRIM_MODE_NONE = 0;
+
+        /**
+         * The view will fade out on scrim.
+         */
+        public static final int SCRIM_MODE_OUT = 1;
+
+        /**
+         * The view will fade in on scrim.
+         */
+        public static final int SCRIM_MODE_IN = 2;
+
+        int mScrimMode = SCRIM_MODE_NONE;
+        // END MODIFICATION by dmfs
+
         int mCollapseMode = COLLAPSE_MODE_OFF;
         float mParallaxMult = DEFAULT_PARALLAX_MULTIPLIER;
+
 
         public LayoutParams(Context c, AttributeSet attrs) {
             super(c, attrs);
@@ -1254,6 +1301,12 @@ public class CollapsingToolbarLayout extends FrameLayout {
                     R.styleable.CollapsingToolbarLayout_Layout_layout_collapseParallaxMultiplier,
                     DEFAULT_PARALLAX_MULTIPLIER));
             a.recycle();
+            // BEGIN MODIFICATION by dmfs: load scrim mode attribute, if present
+            TypedArray b = c.obtainStyledAttributes(attrs, net.opacapp.multilinecollapsingtoolbar.R.styleable.CollapsingToolbarScrimMode);
+            mScrimMode = b.hasValue(net.opacapp.multilinecollapsingtoolbar.R.styleable.CollapsingToolbarScrimMode_layout_scrimMode) ?
+                    b.getInteger(net.opacapp.multilinecollapsingtoolbar.R.styleable.CollapsingToolbarScrimMode_layout_scrimMode, 0) : 0;
+            b.recycle();
+            // END MODIFICATION by dmfs
         }
 
         public LayoutParams(int width, int height) {
@@ -1320,6 +1373,21 @@ public class CollapsingToolbarLayout extends FrameLayout {
         public float getParallaxMultiplier() {
             return mParallaxMult;
         }
+
+        // BEGIN MODIFICATION by dmfs: setter & getter for scrim mode
+        /**
+         * Set the scrim mode
+         * @param scrimMode
+         */
+        public void setScrimMode(int scrimMode)
+        {
+            mScrimMode = scrimMode;
+        }
+
+        public int getScrimMode() {
+            return mScrimMode;
+        }
+        // END MODIFICATION by dmfs
     }
 
     /**

@@ -380,7 +380,7 @@ final class CollapsingTextHelper {
      * A value of {@code 1.0} indicates that the collapsed title is fully opaque.
      */
     void setBlendRatio(float ratio) {
-        ratio = MathUtils.constrain(ratio, 0f, 1f);
+        ratio = MathUtils.clamp(ratio, 0f, 1f);
 
         if (ratio != mBlendRatio) {
             mBlendRatio = ratio;
