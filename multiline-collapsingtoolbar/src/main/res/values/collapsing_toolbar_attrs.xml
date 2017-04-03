@@ -1,8 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--BEGIN MODIFICATION: Create an attribute for max line number-->
+<?xml version="1.0" encoding="utf-8"?><!--BEGIN MODIFICATION: Create an attribute for max line number-->
 <resources>
     <declare-styleable name="CollapsingToolbarLayoutExtension">
-        <attr name="maxLines" format="integer" />
+        <attr name="maxLines" format="integer"/>
     </declare-styleable>
-</resources>
-<!--END MODIFICATION-->
+    <declare-styleable name="CollapsingToolbarScrimMode">
+        <attr name="layout_scrimMode" format="enum">
+            <enum name="none" value="0"/>
+            <enum name="out" value="1"/>
+            <enum name="in" value="2"/>
+        </attr>
+    </declare-styleable>
+</resources><!--END MODIFICATION-->

@@ -62,6 +62,7 @@ final class CollapsingTextHelper {
 
     private boolean mDrawTitle;
     private float mExpandedFraction;
+    private float mTransitionFraction;
 
     private final Rect mExpandedBounds;
     private final Rect mCollapsedBounds;
@@ -341,6 +342,21 @@ final class CollapsingTextHelper {
         }
     }
 
+    /**
+     * Set the value indicating the current scroll value. This decides how much of the
+     * background will be displayed, as well as the title metrics/positioning.
+     *
+     * A value of {@code 0.0} indicates that the layout is fully expanded.
+     * A value of {@code 1.0} indicates that the layout is fully collapsed.
+     */
+    void setTransitionFraction(float fraction) {
+        fraction = MathUtils.constrain(fraction, 0f, 1f);
+
+        if (fraction != mTransitionFraction) {
+            mTransitionFraction = fraction;
+            calculateCurrentOffsets();
+        }
+    }
     final boolean setState(final int[] state) {
         mState = state;
 
@@ -385,9 +401,9 @@ final class CollapsingTextHelper {
                 fraction, mTextSizeInterpolator));
 
         // BEGIN MODIFICATION: set text blending
-        setCollapsedTextBlend(1 - lerp(0, 1, 1 - fraction, AnimationUtils
+        setCollapsedTextBlend(1 - lerp(0, 1, 1 - mTransitionFraction, AnimationUtils
                 .FAST_OUT_SLOW_IN_INTERPOLATOR));
-        setExpandedTextBlend(lerp(1, 0, fraction, AnimationUtils
+        setExpandedTextBlend(lerp(1, 0, mTransitionFraction, AnimationUtils
                 .FAST_OUT_SLOW_IN_INTERPOLATOR));
         // END MODIFICATION
 
@@ -395,7 +411,7 @@ final class CollapsingTextHelper {
             // If the collapsed and expanded text colors are different, blend them based on the
             // fraction
             mTextPaint.setColor(blendColors(
-                    getCurrentExpandedTextColor(), getCurrentCollapsedTextColor(), fraction));
+                    getCurrentExpandedTextColor(), getCurrentCollapsedTextColor(), mTransitionFraction));
         } else {
             mTextPaint.setColor(getCurrentCollapsedTextColor());
         }
