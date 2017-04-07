@@ -16,8 +16,6 @@
 
 package net.opacapp.multilinecollapsingtoolbar;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
-
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -57,6 +55,8 @@ import android.widget.FrameLayout;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 /**
  * CollapsingToolbarLayout is a wrapper for {@link Toolbar} which implements a collapsing app bar.
@@ -107,6 +107,12 @@ public class CollapsingToolbarLayout extends FrameLayout {
 
     private static final int DEFAULT_SCRIM_ANIMATION_DURATION = 600;
 
+    public static final int AUTO_ANIMATE_SCRIM = 1;
+    public static final int AUTO_ANIMATE_TITLE = 2;
+    public static final int AUTO_ANIMATE_CHILDREN = 4;
+    public static final int AUTO_ANIMATE_ALL = AUTO_ANIMATE_SCRIM | AUTO_ANIMATE_TITLE | AUTO_ANIMATE_CHILDREN;
+    public static final int AUTO_ANIMATE_DEFAULT = AUTO_ANIMATE_SCRIM;
+
     private boolean mRefreshToolbar = true;
     private int mToolbarId;
     private Toolbar mToolbar;
@@ -136,6 +142,8 @@ public class CollapsingToolbarLayout extends FrameLayout {
     int mCurrentOffset;
 
     WindowInsetsCompat mLastInsets;
+
+    private int mAutoAnimate = AUTO_ANIMATE_DEFAULT;
 
     public CollapsingToolbarLayout(Context context) {
         this(context, null);
@@ -230,7 +238,7 @@ public class CollapsingToolbarLayout extends FrameLayout {
                 new android.support.v4.view.OnApplyWindowInsetsListener() {
                     @Override
                     public WindowInsetsCompat onApplyWindowInsets(View v,
-                            WindowInsetsCompat insets) {
+                                                                  WindowInsetsCompat insets) {
                         return onWindowInsetChanged(insets);
                     }
                 });
@@ -240,11 +248,14 @@ public class CollapsingToolbarLayout extends FrameLayout {
         mCollapsingTextHelper.setMaxLines(typedArray.getInteger(net.opacapp.multilinecollapsingtoolbar.R.styleable.CollapsingToolbarLayoutExtension_maxLines, 3));
         mCollapsingTextHelper.setLineSpacingExtra(typedArray.getFloat(net.opacapp.multilinecollapsingtoolbar.R.styleable.CollapsingToolbarLayoutExtension_lineSpacingExtra, 0));
         mCollapsingTextHelper.setLineSpacingMultiplier(typedArray.getFloat(net.opacapp.multilinecollapsingtoolbar.R.styleable.CollapsingToolbarLayoutExtension_lineSpacingMultiplier, 1));
+        // load auto animation setting
+        mAutoAnimate = typedArray.getInt(net.opacapp.multilinecollapsingtoolbar.R.styleable.CollapsingToolbarLayoutExtension_autoAnimate, AUTO_ANIMATE_DEFAULT);
         typedArray.recycle();
         // END MODIFICATION
     }
 
     // BEGIN MODIFICATION: add setMaxLines and getMaxLines
+
     /**
      * Sets the maximum number of lines to display in the expanded state
      */
@@ -261,6 +272,7 @@ public class CollapsingToolbarLayout extends FrameLayout {
     // END MODIFICATION
 
     // BEGIN MODIFICATION: add setLineSpacingExtra and getLineSpacingExtra
+
     /**
      * Set line spacing extra. The default is 0.0f
      */
@@ -581,10 +593,9 @@ public class CollapsingToolbarLayout extends FrameLayout {
     /**
      * Sets the title to be displayed by this view, if enabled.
      *
+     * @attr ref R.styleable#CollapsingToolbarLayout_title
      * @see #setTitleEnabled(boolean)
      * @see #getTitle()
-     *
-     * @attr ref R.styleable#CollapsingToolbarLayout_title
      */
     public void setTitle(@Nullable CharSequence title) {
         mCollapsingTextHelper.setText(title);
@@ -606,10 +617,9 @@ public class CollapsingToolbarLayout extends FrameLayout {
      *
      * <p>The title displayed by this view will shrink and grow based on the scroll offset.</p>
      *
+     * @attr ref R.styleable#CollapsingToolbarLayout_titleEnabled
      * @see #setTitle(CharSequence)
      * @see #isTitleEnabled()
-     *
-     * @attr ref R.styleable#CollapsingToolbarLayout_titleEnabled
      */
     public void setTitleEnabled(boolean enabled) {
         if (enabled != mCollapsingTitleEnabled) {
@@ -622,9 +632,8 @@ public class CollapsingToolbarLayout extends FrameLayout {
     /**
      * Returns whether this view is currently displaying its own title.
      *
-     * @see #setTitleEnabled(boolean)
-     *
      * @attr ref R.styleable#CollapsingToolbarLayout_titleEnabled
+     * @see #setTitleEnabled(boolean)
      */
     public boolean isTitleEnabled() {
         return mCollapsingTitleEnabled;
@@ -636,7 +645,6 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * this view has already been laid out.
      *
      * @param shown whether the scrims should be shown
-     *
      * @see #getStatusBarScrim()
      * @see #getContentScrim()
      */
@@ -648,9 +656,8 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * Set whether the content scrim and/or status bar scrim should be shown or not. Any change
      * in the vertical scroll may overwrite this value.
      *
-     * @param shown whether the scrims should be shown
+     * @param shown   whether the scrims should be shown
      * @param animate whether to animate the visibility change
-     *
      * @see #getStatusBarScrim()
      * @see #getContentScrim()
      */
@@ -677,7 +684,14 @@ public class CollapsingToolbarLayout extends FrameLayout {
             mScrimAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
                 public void onAnimationUpdate(ValueAnimator animator) {
-                    setScrimAlpha((int) animator.getAnimatedValue());
+                    // BEGIN MODIFICATION by dmfs: apply scrim & blending automatically if configured that way
+                    if ((mAutoAnimate & AUTO_ANIMATE_SCRIM) != 0) {
+                        setScrimAlpha(animator.getAnimatedIntValue());
+                    }
+                    if ((mAutoAnimate & AUTO_ANIMATE_TITLE) != 0) {
+                        mCollapsingTextHelper.setBlendRatio(animator.getAnimatedIntValue() / 255f);
+                    }
+                    // END MODIFICATION by dmfs
                 }
             });
         } else if (mScrimAnimator.isRunning()) {
@@ -708,7 +722,6 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * the scrim functionality.
      *
      * @param drawable the drawable to display
-     *
      * @attr ref R.styleable#CollapsingToolbarLayout_contentScrim
      * @see #getContentScrim()
      */
@@ -731,7 +744,6 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * Set the color to use for the content scrim.
      *
      * @param color the color to display
-     *
      * @attr ref R.styleable#CollapsingToolbarLayout_contentScrim
      * @see #getContentScrim()
      */
@@ -743,7 +755,6 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * Set the drawable to use for the content scrim from resources.
      *
      * @param resId drawable resource id
-     *
      * @attr ref R.styleable#CollapsingToolbarLayout_contentScrim
      * @see #getContentScrim()
      */
@@ -770,7 +781,6 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * <p>This scrim is only shown when we have been given a top system inset.</p>
      *
      * @param drawable the drawable to display
-     *
      * @attr ref R.styleable#CollapsingToolbarLayout_statusBarScrim
      * @see #getStatusBarScrim()
      */
@@ -842,7 +852,6 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * <p>This scrim is only shown when we have been given a top system inset.</p>
      *
      * @param color the color to display
-     *
      * @attr ref R.styleable#CollapsingToolbarLayout_statusBarScrim
      * @see #getStatusBarScrim()
      */
@@ -854,7 +863,6 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * Set the drawable to use for the content scrim from resources.
      *
      * @param resId drawable resource id
-     *
      * @attr ref R.styleable#CollapsingToolbarLayout_statusBarScrim
      * @see #getStatusBarScrim()
      */
@@ -1006,16 +1014,15 @@ public class CollapsingToolbarLayout extends FrameLayout {
     /**
      * Sets the expanded title margins.
      *
-     * @param start the starting title margin in pixels
-     * @param top the top title margin in pixels
-     * @param end the ending title margin in pixels
+     * @param start  the starting title margin in pixels
+     * @param top    the top title margin in pixels
+     * @param end    the ending title margin in pixels
      * @param bottom the bottom title margin in pixels
-     *
+     * @attr ref android.support.design.R.styleable#CollapsingToolbarLayout_expandedTitleMargin
      * @see #getExpandedTitleMarginStart()
      * @see #getExpandedTitleMarginTop()
      * @see #getExpandedTitleMarginEnd()
      * @see #getExpandedTitleMarginBottom()
-     * @attr ref android.support.design.R.styleable#CollapsingToolbarLayout_expandedTitleMargin
      */
     public void setExpandedTitleMargin(int start, int top, int end, int bottom) {
         mExpandedMarginStart = start;
@@ -1027,9 +1034,8 @@ public class CollapsingToolbarLayout extends FrameLayout {
 
     /**
      * @return the starting expanded title margin in pixels
-     *
-     * @see #setExpandedTitleMarginStart(int)
      * @attr ref android.support.design.R.styleable#CollapsingToolbarLayout_expandedTitleMarginStart
+     * @see #setExpandedTitleMarginStart(int)
      */
     public int getExpandedTitleMarginStart() {
         return mExpandedMarginStart;
@@ -1039,8 +1045,8 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * Sets the starting expanded title margin in pixels.
      *
      * @param margin the starting title margin in pixels
-     * @see #getExpandedTitleMarginStart()
      * @attr ref android.support.design.R.styleable#CollapsingToolbarLayout_expandedTitleMarginStart
+     * @see #getExpandedTitleMarginStart()
      */
     public void setExpandedTitleMarginStart(int margin) {
         mExpandedMarginStart = margin;
@@ -1049,8 +1055,8 @@ public class CollapsingToolbarLayout extends FrameLayout {
 
     /**
      * @return the top expanded title margin in pixels
-     * @see #setExpandedTitleMarginTop(int)
      * @attr ref android.support.design.R.styleable#CollapsingToolbarLayout_expandedTitleMarginTop
+     * @see #setExpandedTitleMarginTop(int)
      */
     public int getExpandedTitleMarginTop() {
         return mExpandedMarginTop;
@@ -1060,8 +1066,8 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * Sets the top expanded title margin in pixels.
      *
      * @param margin the top title margin in pixels
-     * @see #getExpandedTitleMarginTop()
      * @attr ref android.support.design.R.styleable#CollapsingToolbarLayout_expandedTitleMarginTop
+     * @see #getExpandedTitleMarginTop()
      */
     public void setExpandedTitleMarginTop(int margin) {
         mExpandedMarginTop = margin;
@@ -1070,8 +1076,8 @@ public class CollapsingToolbarLayout extends FrameLayout {
 
     /**
      * @return the ending expanded title margin in pixels
-     * @see #setExpandedTitleMarginEnd(int)
      * @attr ref android.support.design.R.styleable#CollapsingToolbarLayout_expandedTitleMarginEnd
+     * @see #setExpandedTitleMarginEnd(int)
      */
     public int getExpandedTitleMarginEnd() {
         return mExpandedMarginEnd;
@@ -1081,8 +1087,8 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * Sets the ending expanded title margin in pixels.
      *
      * @param margin the ending title margin in pixels
-     * @see #getExpandedTitleMarginEnd()
      * @attr ref android.support.design.R.styleable#CollapsingToolbarLayout_expandedTitleMarginEnd
+     * @see #getExpandedTitleMarginEnd()
      */
     public void setExpandedTitleMarginEnd(int margin) {
         mExpandedMarginEnd = margin;
@@ -1091,8 +1097,8 @@ public class CollapsingToolbarLayout extends FrameLayout {
 
     /**
      * @return the bottom expanded title margin in pixels
-     * @see #setExpandedTitleMarginBottom(int)
      * @attr ref android.support.design.R.styleable#CollapsingToolbarLayout_expandedTitleMarginBottom
+     * @see #setExpandedTitleMarginBottom(int)
      */
     public int getExpandedTitleMarginBottom() {
         return mExpandedMarginBottom;
@@ -1102,8 +1108,8 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * Sets the bottom expanded title margin in pixels.
      *
      * @param margin the bottom title margin in pixels
-     * @see #getExpandedTitleMarginBottom()
      * @attr ref android.support.design.R.styleable#CollapsingToolbarLayout_expandedTitleMarginBottom
+     * @see #getExpandedTitleMarginBottom()
      */
     public void setExpandedTitleMarginBottom(int margin) {
         mExpandedMarginBottom = margin;
@@ -1118,7 +1124,6 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * made visible, otherwise they are hidden.</p>
      *
      * @param height value in pixels used to define when to trigger a scrim visibility change
-     *
      * @attr ref android.support.design.R.styleable#CollapsingToolbarLayout_scrimVisibleHeightTrigger
      */
     public void setScrimVisibleHeightTrigger(@IntRange(from = 0) final int height) {
@@ -1159,7 +1164,6 @@ public class CollapsingToolbarLayout extends FrameLayout {
      * Set the duration used for scrim visibility animations.
      *
      * @param duration the duration to use in milliseconds
-     *
      * @attr ref android.support.design.R.styleable#CollapsingToolbarLayout_scrimAnimationDuration
      */
     public void setScrimAnimationDuration(@IntRange(from = 0) final long duration) {
@@ -1197,7 +1201,9 @@ public class CollapsingToolbarLayout extends FrameLayout {
 
         private static final float DEFAULT_PARALLAX_MULTIPLIER = 0.5f;
 
-        /** @hide */
+        /**
+         * @hide
+         */
         @RestrictTo(LIBRARY_GROUP)
         @IntDef({
                 COLLAPSE_MODE_OFF,
@@ -1205,7 +1211,8 @@ public class CollapsingToolbarLayout extends FrameLayout {
                 COLLAPSE_MODE_PARALLAX
         })
         @Retention(RetentionPolicy.SOURCE)
-        @interface CollapseMode {}
+        @interface CollapseMode {
+        }
 
         /**
          * The view will act as normal with no collapsing behavior.
@@ -1290,7 +1297,6 @@ public class CollapsingToolbarLayout extends FrameLayout {
          * {@code 1.0f} indicates normal scroll movement.
          *
          * @param multiplier the multiplier.
-         *
          * @see #getParallaxMultiplier()
          */
         public void setParallaxMultiplier(float multiplier) {
@@ -1353,18 +1359,30 @@ public class CollapsingToolbarLayout extends FrameLayout {
                 }
             }
 
-            // Show or hide the scrims if needed
-            updateScrimVisibility();
+            // BEGIN MODIFICATION by dmfs: apply scrim & blending gradually if configured that way
+            final float expandRatio = Math.abs(verticalOffset) /
+                    (float) (getHeight() - ViewCompat.getMinimumHeight(CollapsingToolbarLayout.this) - insetTop);
+
+            if ((mAutoAnimate & AUTO_ANIMATE_SCRIM) == 0) {
+                // title blend it not auto-animated
+                setScrimAlpha((int) (expandRatio * 0xff));
+            } else {
+                // Show or hide the scrims if needed
+                updateScrimVisibility();
+            }
 
             if (mStatusBarScrim != null && insetTop > 0) {
                 ViewCompat.postInvalidateOnAnimation(CollapsingToolbarLayout.this);
             }
 
             // Update the collapsing text's fraction
-            final int expandRange = getHeight() - ViewCompat.getMinimumHeight(
-                    CollapsingToolbarLayout.this) - insetTop;
-            mCollapsingTextHelper.setExpansionFraction(
-                    Math.abs(verticalOffset) / (float) expandRange);
+            mCollapsingTextHelper.setExpansionFraction(expandRatio);
+
+            if ((mAutoAnimate & AUTO_ANIMATE_TITLE) == 0) {
+                // title blend it not auto-animated
+                mCollapsingTextHelper.setBlendRatio(expandRatio);
+            }
+            // END MODIFICATION
         }
     }
 }

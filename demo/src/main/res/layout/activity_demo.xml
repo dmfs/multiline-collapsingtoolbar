@@ -10,26 +10,32 @@
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="192dp"
-        android:theme="@style/AppTheme.AppBarOverlay"
         android:background="?attr/colorPrimary"
-        android:fitsSystemWindows="true">
+        android:fitsSystemWindows="true"
+        android:theme="@style/AppTheme.AppBarOverlay">
 
         <net.opacapp.multilinecollapsingtoolbar.CollapsingToolbarLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:theme="@style/AppTheme.AppBarOverlay"
-            app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:title="@string/title"
+            app:autoAnimate="all"
+            app:contentScrim="#ff00ff"
             app:expandedTitleTextAppearance="@style/TextAppearance.ExpandedTitle"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed"
+            app:lineSpacingMultiplier="1.2"
             app:maxLines="3"
-            app:lineSpacingMultiplier="1.2">
+            app:title="@string/title">
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
 
             <android.support.v7.widget.Toolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                app:popupTheme="@style/AppTheme.PopupOverlay"
-                app:layout_collapseMode="pin"/>
+                app:layout_collapseMode="pin"
+                app:popupTheme="@style/AppTheme.PopupOverlay" />
 
         </net.opacapp.multilinecollapsingtoolbar.CollapsingToolbarLayout>
 
@@ -39,13 +45,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"
             android:layout_marginLeft="@dimen/activity_horizontal_margin"
             android:layout_marginRight="@dimen/activity_horizontal_margin"
             android:layout_marginTop="@dimen/activity_vertical_margin"
-            android:layout_marginBottom="@dimen/activity_vertical_margin"
             android:text="@string/loremipsum" />
     </android.support.v4.widget.NestedScrollView>
 
