@@ -23,7 +23,7 @@
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
             app:title="@string/title"
             app:expandedTitleTextAppearance="@style/TextAppearance.ExpandedTitle"
-            app:autoAnimate="all"
+            app:autoAnimate="title"
             app:contentScrim="#ffffff"
             app:statusBarScrim="#c0c0c0"
             app:maxLines="3">

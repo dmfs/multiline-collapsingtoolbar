@@ -131,6 +131,7 @@ public class CollapsingToolbarLayout extends FrameLayout {
     private Drawable mContentScrim;
     Drawable mStatusBarScrim;
     private int mScrimAlpha;
+    private float mChildrenAlpha;
     private boolean mScrimsAreShown;
     private ValueAnimatorCompat mScrimAnimator;
     private long mScrimAnimationDuration;
@@ -649,6 +650,9 @@ public class CollapsingToolbarLayout extends FrameLayout {
                     if ((mAutoAnimate & AUTO_ANIMATE_SCRIM) != 0) {
                         setScrimAlpha(animator.getAnimatedIntValue());
                     }
+                    if ((mAutoAnimate & AUTO_ANIMATE_CHILDREN) != 0) {
+                        setChildrenAlpha(animator.getAnimatedIntValue()/255f);
+                    }
                     if ((mAutoAnimate & AUTO_ANIMATE_TITLE) != 0) {
                         mCollapsingTextHelper.setBlendRatio(animator.getAnimatedIntValue()/255f);
                     }
@@ -665,32 +669,6 @@ public class CollapsingToolbarLayout extends FrameLayout {
 
     void setScrimAlpha(int alpha) {
         if (alpha != mScrimAlpha) {
-
-            // BEGIN MODIFICATION by dmfs: update all children with scrim mode
-            float floatAlpha = alpha / (float) 0xff;
-            for (int i = 0, z = getChildCount(); i < z; i++) {
-                final View child = getChildAt(i);
-                final LayoutParams lp = (LayoutParams) child.getLayoutParams();
-
-                switch (lp.mScrimMode) {
-                    case LayoutParams.SCRIM_MODE_OUT:
-                        if (Build.VERSION.SDK_INT < 11) {
-                            child.setVisibility(floatAlpha < 0.5 ? VISIBLE : GONE);
-                        } else {
-                            child.setAlpha(1 - floatAlpha);
-                        }
-                        break;
-                    case LayoutParams.SCRIM_MODE_IN:
-                        if (Build.VERSION.SDK_INT < 11) {
-                            child.setVisibility(floatAlpha < 0.5 ? GONE : VISIBLE);
-                        } else {
-                            child.setAlpha(floatAlpha);
-                        }
-                        break;
-                }
-            }
-            // END MODIFICATION by dmfs
-
             final Drawable contentScrim = mContentScrim;
             if (contentScrim != null && mToolbar != null) {
                 ViewCompat.postInvalidateOnAnimation(mToolbar);
@@ -707,6 +685,37 @@ public class CollapsingToolbarLayout extends FrameLayout {
             ViewCompat.postInvalidateOnAnimation(CollapsingToolbarLayout.this);
         }
     }
+
+
+    // BEGIN MODIFICATION by dmfs: update all children with scrim mode
+    void setChildrenAlpha(float alpha) {
+        if (alpha != mChildrenAlpha) {
+            for (int i = 0, z = getChildCount(); i < z; i++) {
+                final View child = getChildAt(i);
+                final LayoutParams lp = (LayoutParams) child.getLayoutParams();
+
+                switch (lp.mScrimMode) {
+                    case LayoutParams.SCRIM_MODE_OUT:
+                        if (Build.VERSION.SDK_INT < 11) {
+                            child.setVisibility(alpha < 0.5 ? VISIBLE : GONE);
+                        } else {
+                            child.setAlpha(1 - alpha);
+                        }
+                        break;
+                    case LayoutParams.SCRIM_MODE_IN:
+                        if (Build.VERSION.SDK_INT < 11) {
+                            child.setVisibility(alpha < 0.5 ? GONE : VISIBLE);
+                        } else {
+                            child.setAlpha(alpha);
+                        }
+                        break;
+                }
+            }
+            mChildrenAlpha = alpha;
+            ViewCompat.postInvalidateOnAnimation(CollapsingToolbarLayout.this);
+        }
+    }
+    // END MODIFICATION by dmfs
 
     /**
      * Set the drawable to use for the content scrim from resources. Providing null will disable
@@ -1405,10 +1414,9 @@ public class CollapsingToolbarLayout extends FrameLayout {
                 // title blend it not auto-animated
                 setScrimAlpha((int) (expandRatio * 0xff));
             }
-            else {
-                // Show or hide the scrims if needed
-                updateScrimVisibility();
-            }
+
+            // start animations if necessary
+            updateScrimVisibility();
 
             if (mStatusBarScrim != null && insetTop > 0) {
                 ViewCompat.postInvalidateOnAnimation(CollapsingToolbarLayout.this);
@@ -1420,6 +1428,10 @@ public class CollapsingToolbarLayout extends FrameLayout {
             if ((mAutoAnimate & AUTO_ANIMATE_TITLE) == 0) {
                 // title blend it not auto-animated
                 mCollapsingTextHelper.setBlendRatio(expandRatio);
+            }
+            if ((mAutoAnimate & AUTO_ANIMATE_CHILDREN) == 0) {
+                // title blend it not auto-animated
+                setChildrenAlpha(expandRatio);
             }
             // END MODIFICATION
         }
