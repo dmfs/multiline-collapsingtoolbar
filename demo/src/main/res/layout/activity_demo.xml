@@ -7,12 +7,13 @@
     android:fitsSystemWindows="true"
     tools:context="net.opacapp.multilinecollapsingtoolbar.demo.DemoActivity">
 
-    <android.support.design.widget.AppBarLayout
+    <net.opacapp.appbarlayout.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="192dp"
         android:background="?attr/colorPrimary"
-        android:fitsSystemWindows="true"
-        android:theme="@style/AppTheme.AppBarOverlay">
+        android:theme="@style/AppTheme.AppBarOverlay"
+        android:stateListAnimator="@animator/appbar_state_list_animator"
+        android:fitsSystemWindows="true">
 
         <net.opacapp.multilinecollapsingtoolbar.CollapsingToolbarLayout
             android:layout_width="match_parent"
@@ -39,7 +40,7 @@
 
         </net.opacapp.multilinecollapsingtoolbar.CollapsingToolbarLayout>
 
-    </android.support.design.widget.AppBarLayout>
+    </net.opacapp.appbarlayout.AppBarLayout>
 
     <android.support.v4.widget.NestedScrollView
         android:layout_width="match_parent"
